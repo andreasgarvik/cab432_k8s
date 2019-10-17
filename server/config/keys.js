@@ -1,1 +1,4 @@
-module.exports = {}
+module.exports = {
+	TWITTERAPIKEY: process.env.TWITTERAPIKEY,
+	TWITTERAPISECRET: process.env.TWITTERAPISECRET
+}

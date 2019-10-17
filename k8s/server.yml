@@ -11,6 +11,10 @@ spec:
       labels:
         app: server
     spec:
+      volumes:
+        - name: google-cloud-key
+          secret:
+            secretName: serviceaccountkey
       containers:
         - name: server
           image: andreasgarvik/cab432-server
@@ -24,6 +28,22 @@ spec:
               cpu: 250m
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: google-cloud-key
+              mountPath: /var/secrets/google
+          env:
+            - name: TWITTERAPIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: twitterapikey
+                  key: TWITTERAPIKEY
+            - name: TWITTERAPISECRET
+              valueFrom:
+                secretKeyRef:
+                  name: twitterapisecret
+                  key: TWITTERAPISECRET
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /var/secrets/google/key.json
 ---
 apiVersion: v1
 kind: Service

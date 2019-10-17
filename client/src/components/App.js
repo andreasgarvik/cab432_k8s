@@ -1,13 +1,27 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { connect } from 'react-redux'
 import * as actions from '../store/actions'
 
 class App extends React.Component {
 	componentDidMount = () => {
-		this.props.twitterSearch()
+		this.props.connectStream()
+	}
+
+	disconnectStream = () => {
+		this.props.disconnectStream()
+	}
+
+	analyseStream = () => {
+		this.props.analyseStream()
 	}
 	render = () => {
-		return <div>The calculation took {this.props.twitter} ms</div>
+		return (
+			<div>
+				<div>{JSON.stringify(this.props.twitter)}</div>
+				<button onClick={this.disconnectStream}>Disconnect</button>
+				<button onClick={this.analyseStream}>Analyse</button>
+			</div>
+		)
 	}
 }
 

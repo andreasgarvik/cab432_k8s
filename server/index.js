@@ -1,18 +1,18 @@
-const express = require('express')
+const app = require('express')()
+const server = require('http').createServer(app)
+const io = require('socket.io')(server, { path: '/api' })
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const helmet = require('helmet')
 
 // Config
-const app = express()
 app.use(cors())
 app.use(helmet())
 app.use(bodyParser.json())
 
 // Routes
-const twitter = require('./routes/twitter')
-app.use('/twitter', twitter)
+require('./routes/twitter')(app, io)
 
 // Startup
 const PORT = process.env.PORT || 8080
-app.listen(PORT)
+server.listen(PORT)
