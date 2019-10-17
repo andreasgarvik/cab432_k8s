@@ -1,0 +1,58 @@
+:root {
+	--space: 1.5em 0;
+	--space: 2em 0;
+}
+
+.Site {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+.Site-content {
+	flex: 1 0 auto;
+	padding: var(--space) var(--space) 0;
+	width: 100%;
+}
+
+.Site-content:after {
+	content: '\00a0';
+	display: block;
+	margin-top: var(--space);
+	height: 0;
+	visibility: hidden;
+}
+
+.nav-wrapper {
+	z-index: 1;
+}
+
+::-webkit-scrollbar {
+	display: none;
+}
+
+.input-field label {
+	color: #000;
+}
+
+.input-field input:focus + label {
+	color: #000;
+}
+
+.input-field input:focus {
+	border-bottom: 1px solid #000;
+	box-shadow: 0 1px 0 0 #000;
+}
+
+.input-field .prefix.active {
+	color: #000;
+}
+
+.preloader-wrapper {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	margin: auto;
+}

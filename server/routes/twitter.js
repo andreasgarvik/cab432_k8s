@@ -137,31 +137,16 @@ const startStream = async rules => {
 	return stream
 }
 
-module.exports = (app, io) => {
-	io.on('connection', async client => {
-		const tweets = []
-		const rules = [
-			{ value: 'dog has:images', tag: 'dog pictures' },
-			{ value: 'cat has:images -grumpy', tag: 'cat pictures' }
-		]
-		const stream = await startStream(rules)
-		stream.on('data', data => {
-			if (data.length > 2) {
-				const t = JSON.parse(data)
-				client.emit('data', t)
-				tweets.push(t.data)
-			}
-		})
-		client.on('disconnect', () => {
-			stream.abort()
-		})
-	})
-
+module.exports = (app, redis) => {
 	let stream
 	const tweets = []
 
 	app.get('/connect', async (req, res) => {
-		const rules = [{ value: 'trump lang:en', tag: 'english' }]
+		const q = req.query.q
+		redis.hset('searchterms', q, q)
+		res.end()
+		/*
+		 const rules = [{ value: `${q} lang:en`, tag: 'english' }]
 		stream = await startStream(rules)
 		stream.on('data', data => {
 			if (data.length > 2) {
@@ -173,18 +158,26 @@ module.exports = (app, io) => {
 					res.end()
 				}
 			}
-		})
+		}) */
 	})
 
 	app.get('/disconnect', (req, res) => {
-		stream.abort()
-		res.send({ tweets })
+		if (stream) {
+			if (!stream.aborted) {
+				stream.abort()
+			}
+		}
+		res.send(tweets)
 	})
 
-	app.get('/analyse', (req, res) => {
-		tweets.length = tweets.forEach(async tweet => {
-			await GoogleNatural(tweet.text)
+	app.get('/analyse', async (req, res) => {
+		result = await GoogleNatural(tweets[0].text)
+		res.send(result)
+	})
+
+	app.get('/searched', async (req, res) => {
+		redis.hgetall('searchterms', (err, values) => {
+			res.send(values)
 		})
-		res.end()
 	})
 }

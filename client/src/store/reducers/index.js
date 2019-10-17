@@ -1,8 +1,10 @@
 import { combineReducers } from 'redux'
 import twitterReducer from './twitterReducer'
+import searchedReducer from './searched'
 
 const appReducer = combineReducers({
-	twitter: twitterReducer
+	twitter: twitterReducer,
+	searched: searchedReducer
 })
 
 const rootReducer = (state, action) => {

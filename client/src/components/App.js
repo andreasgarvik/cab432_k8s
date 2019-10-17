@@ -1,35 +1,30 @@
 import React from 'react'
-import { connect } from 'react-redux'
-import * as actions from '../store/actions'
+import { Router, Switch, Route, Redirect } from 'react-router-dom'
+import history from '../config/history'
+import ScrollToTop from '../config/ScrollToTop'
+import Navbar from './Navbar'
+import Footer from './Footer'
+import HomeScreen from './Homescreen'
 
-class App extends React.Component {
-	componentDidMount = () => {
-		this.props.connectStream()
-	}
-
-	disconnectStream = () => {
-		this.props.disconnectStream()
-	}
-
-	analyseStream = () => {
-		this.props.analyseStream()
-	}
-	render = () => {
-		return (
-			<div>
-				<div>{JSON.stringify(this.props.twitter)}</div>
-				<button onClick={this.disconnectStream}>Disconnect</button>
-				<button onClick={this.analyseStream}>Analyse</button>
-			</div>
-		)
-	}
+const App = () => {
+	return (
+		<Router history={history}>
+			<ScrollToTop>
+				<div className='App Site'>
+					<Navbar />
+					<div className='Site-content'>
+						<div className='main'>
+							<Switch>
+								<Route exact path='/' component={HomeScreen} />
+								<Redirect to='/' />
+							</Switch>
+						</div>
+					</div>
+					<Footer />
+				</div>
+			</ScrollToTop>
+		</Router>
+	)
 }
 
-const mapStateToProps = ({ twitter }) => {
-	return { twitter }
-}
-
-export default connect(
-	mapStateToProps,
-	actions
-)(App)
+export default App
