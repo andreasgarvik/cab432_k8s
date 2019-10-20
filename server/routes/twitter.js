@@ -2,9 +2,13 @@ const request = require('request')
 const util = require('util')
 const keys = require('../config/keys')
 const GoogleNatural = require('../services/google')
+const db = require('../db/firestore')
+const Sentiment = require('sentiment')
 
 const get = util.promisify(request.get)
 const post = util.promisify(request.post)
+
+const sentiment = new Sentiment()
 
 const bearerTokenURL = 'https://api.twitter.com/oauth2/token'
 const streamURL =
@@ -27,7 +31,7 @@ const bearerToken = async () => {
 	return JSON.parse(response.body).access_token
 }
 
-const getCurrentRules = async token => {
+const getAllRules = async token => {
 	const requestConfig = {
 		url: rulesURL,
 		auth: {
@@ -44,7 +48,11 @@ const getCurrentRules = async token => {
 	return JSON.parse(response.body)
 }
 
-const deleteCurrentRules = async (rules, token) => {
+const deleteAllRules = async (rules, token) => {
+	if (!Array.isArray(rules.data)) {
+		return null
+	}
+
 	const ids = rules.data.map(rule => rule.id)
 
 	const requestConfig = {
@@ -118,6 +126,8 @@ const startStream = async rules => {
 	}
 
 	try {
+		currentRules = await getAllRules(token)
+		await deleteAllRules(currentRules, token)
 		await setRules(rules, token)
 	} catch (e) {
 		console.error(e)
@@ -138,46 +148,68 @@ const startStream = async rules => {
 }
 
 module.exports = (app, redis) => {
-	let stream
-	const tweets = []
-
 	app.get('/connect', async (req, res) => {
-		const q = req.query.q
+		let tweets = []
+		let q = req.query.q
 		redis.hset('searchterms', q, q)
-		res.end()
-		/*
-		 const rules = [{ value: `${q} lang:en`, tag: 'english' }]
-		stream = await startStream(rules)
-		stream.on('data', data => {
-			if (data.length > 2) {
-				const t = JSON.parse(data)
-				if (t.connection_issue === 'TooManyConnections') {
-					res.send({ error: t.connection_issue })
+		await db
+			.collection('searchterms')
+			.doc(q)
+			.set({
+				searchterm: q
+			})
+		let rules = [{ value: `${q} lang:en`, tag: 'english' }]
+		let stream = await startStream(rules)
+		stream.on('data', async data => {
+			if (tweets.length < 100) {
+				if (data.length > 2) {
+					let t = JSON.parse(data)
+					if (t.connection_issue === 'TooManyConnections') {
+						res.send({ error: t.connection_issue })
+					} else {
+						tweets.push(t.data)
+					}
+				}
+			} else {
+				stream.abort()
+				tweets.forEach(async tweet => {
+					let obj = {
+						searchterm: q,
+						text: tweet.text
+					}
+					redis.hset('tweets', tweet.id, JSON.stringify(obj))
+					await db
+						.collection('tweets')
+						.doc(tweet.id)
+						.set(obj)
+				})
+				if (tweets.length > 0) {
+					let result = []
+					tweets.forEach(tweet => {
+						result.push(sentiment.analyze(tweet.text))
+					})
+					res.send({ tweets, result })
 				} else {
-					tweets.push(t.data)
-					res.end()
+					res.send({ error: 'No tweets' })
 				}
 			}
-		}) */
-	})
-
-	app.get('/disconnect', (req, res) => {
-		if (stream) {
-			if (!stream.aborted) {
-				stream.abort()
-			}
-		}
-		res.send(tweets)
-	})
-
-	app.get('/analyse', async (req, res) => {
-		result = await GoogleNatural(tweets[0].text)
-		res.send(result)
+		})
 	})
 
 	app.get('/searched', async (req, res) => {
-		redis.hgetall('searchterms', (err, values) => {
-			res.send(values)
+		redis.hgetall('searchterms', async (err, values) => {
+			let all = []
+			if (!values) {
+				let data = await db.collection('searchterms').get()
+				data.forEach(doc => {
+					let q = doc.data().searchterm
+					all = [...all, q]
+					redis.hset('searchterms', q, q)
+				})
+			} else {
+				Object.keys(values).forEach(doc => (all = [...all, doc]))
+			}
+			res.send(all)
 		})
 	})
 }

@@ -1,30 +1,14 @@
 import axios from 'axios'
-import { TWITTER_STREAM, TWITTER_ANALYZE, NEW_SESSION, SEARCHED } from './types'
+import { TWITTER_STREAM, NEW_SESSION, SEARCHED, NEW_SEARCH } from './types'
 
 export const connectStream = q => async dispatch => {
-	await axios.get('/api/connect', {
+	const res = await axios.get('/api/connect', {
 		params: {
 			q
 		}
 	})
 	dispatch({
 		type: TWITTER_STREAM,
-		payload: 'connected'
-	})
-}
-
-export const disconnectStream = () => async dispatch => {
-	const res = await axios.get('/api/disconnect')
-	dispatch({
-		type: TWITTER_STREAM,
-		payload: res.data
-	})
-}
-
-export const analyseStream = () => async dispatch => {
-	const res = await axios.get('/api/analyse')
-	dispatch({
-		type: TWITTER_ANALYZE,
 		payload: res.data
 	})
 }
@@ -34,6 +18,13 @@ export const searchedTerms = () => async dispatch => {
 	dispatch({
 		type: SEARCHED,
 		payload: res.data
+	})
+}
+
+export const newSearch = q => dispatch => {
+	dispatch({
+		type: NEW_SEARCH,
+		payload: q
 	})
 }
 

@@ -8,6 +8,7 @@ class SearchBar extends React.Component {
 	state = { search: '', loader: false }
 
 	componentDidMount = () => {
+		this.props.flushStore()
 		M.AutoInit()
 	}
 
@@ -21,6 +22,7 @@ class SearchBar extends React.Component {
 		e.preventDefault()
 		this.setState({ loader: true })
 		this.props.connectStream(this.state.search)
+		this.props.newSearch(this.state.search)
 	}
 
 	render() {
@@ -49,15 +51,7 @@ class SearchBar extends React.Component {
 						<i className='material-icons'>search</i>
 					</button>
 				</form>
-				<button
-					className={`btn grey z-depth-0 btn-floating btn-large ${
-						!this.state.loader ? 'disabled' : ''
-					}`}
-					onClick={this.props.disconnectStream}
-				>
-					<i className='material-icons'>pause</i>
-				</button>
-				{this.state.loader && this.props.twitter === 'connected' ? (
+				{this.state.loader && Object.keys(this.props.twitter).length === 0 ? (
 					<Loader />
 				) : null}
 			</>
