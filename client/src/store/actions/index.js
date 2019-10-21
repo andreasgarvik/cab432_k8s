@@ -28,6 +28,13 @@ export const newSearch = q => dispatch => {
 	})
 }
 
+export const flushTweets = () => dispatch => {
+	dispatch({
+		type: TWITTER_STREAM,
+		payload: {}
+	})
+}
+
 export const flushStore = () => dispatch => {
 	dispatch({
 		type: NEW_SESSION

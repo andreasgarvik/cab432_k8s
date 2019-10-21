@@ -158,35 +158,33 @@ module.exports = (app, redis) => {
 			.set({
 				searchterm: q
 			})
-		let rules = [{ value: `${q} lang:en`, tag: 'english' }]
+		let rules = [{ value: `"${q}" lang:en`, tag: q }]
 		let stream = await startStream(rules)
 		stream.on('data', async data => {
 			if (tweets.length < 100) {
 				if (data.length > 2) {
 					let t = JSON.parse(data)
-					if (t.connection_issue === 'TooManyConnections') {
-						res.send({ error: t.connection_issue })
-					} else {
+					if (!t.connection_issue) {
 						tweets.push(t.data)
 					}
 				}
 			} else {
 				stream.abort()
-				tweets.forEach(async tweet => {
-					let obj = {
-						searchterm: q,
-						text: tweet.text
-					}
-					redis.hset('tweets', tweet.id, JSON.stringify(obj))
-					await db
-						.collection('tweets')
-						.doc(tweet.id)
-						.set(obj)
-				})
 				if (tweets.length > 0) {
 					let result = []
 					tweets.forEach(tweet => {
 						result.push(sentiment.analyze(tweet.text))
+					})
+					tweets.forEach(async tweet => {
+						let obj = {
+							searchterm: q,
+							text: tweet.text
+						}
+						redis.hset('tweets', tweet.id, JSON.stringify(obj))
+						await db
+							.collection('tweets')
+							.doc(tweet.id)
+							.set(obj)
 					})
 					res.send({ tweets, result })
 				} else {

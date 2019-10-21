@@ -1,7 +1,7 @@
 apiVersion: skaffold/v1beta15
 kind: Config
 metadata:
-  name: assessment2
+  name: assessment-
 build:
   artifacts:
     - image: andreasgarvik/cab432-client
@@ -10,13 +10,15 @@ build:
       context: server
   tagPolicy:
     sha256: {}
-  local:
-    useBuildkit: false
-    useDockerCLI: false
 deploy:
   kubectl:
     manifests:
-      - k8s\*.yml
+      - k8s\autoscaler-client.yml
+      - k8s\autoscaler-server.yml
+      - k8s\client.yml
+      - k8s\ingress.yml
+      - k8s\redis.yml
+      - k8s\server.yml
 profiles:
   - build:
       googleCloudBuild:

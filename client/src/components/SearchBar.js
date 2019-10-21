@@ -20,7 +20,8 @@ class SearchBar extends React.Component {
 
 	handleSubmit = e => {
 		e.preventDefault()
-		this.setState({ loader: true })
+		this.setState({ search: '', loader: true })
+		this.props.flushTweets()
 		this.props.connectStream(this.state.search)
 		this.props.newSearch(this.state.search)
 	}
@@ -38,6 +39,7 @@ class SearchBar extends React.Component {
 						<input
 							type='text'
 							id='search'
+							value={this.state.search}
 							maxLength='100'
 							placeholder='Enter a search term'
 							onChange={this.handleChange}
@@ -45,7 +47,7 @@ class SearchBar extends React.Component {
 					</div>
 					<button
 						className={`right btn grey z-depth-0 btn-floating btn-large ${
-							!this.state.search ? 'disabled' : ''
+							!this.state.search && this.state.loader ? 'disabled' : ''
 						}`}
 					>
 						<i className='material-icons'>search</i>
