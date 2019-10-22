@@ -4,6 +4,8 @@ const keys = require('../config/keys')
 const GoogleNatural = require('../services/google')
 const db = require('../db/firestore')
 const Sentiment = require('sentiment')
+const natural = require('natural')
+const nlp = require('compromise')
 
 const get = util.promisify(request.get)
 const post = util.promisify(request.post)
@@ -166,27 +168,67 @@ module.exports = (app, redis) => {
 					let t = JSON.parse(data)
 					if (!t.connection_issue) {
 						tweets.push(t.data)
+					} else {
+						stream.abort()
+						tweets = tweets.map(tweet => tweet.text)
+						const doc = await db
+							.collection('tweets')
+							.where('searchterm', '==', q)
+							.get()
+
+						doc.forEach(doc => {
+							if (tweets.length < 100) {
+								tweets.push(doc.data().text)
+							}
+						})
+						let result = []
+						await Promise.all(
+							tweets.map(async tweet => {
+								let s = sentiment.analyze(tweet)
+								let g = await GoogleNatural(tweet)
+								let t = nlp(tweet)
+									.topics()
+									.data()
+								let obj = {
+									score: s,
+									google: g,
+									topics: t,
+									searchterm: q,
+									text: tweet
+								}
+								result.push(obj)
+							})
+						)
+						res.send({ result })
 					}
 				}
 			} else {
 				stream.abort()
 				if (tweets.length > 0) {
 					let result = []
-					tweets.forEach(tweet => {
-						result.push(sentiment.analyze(tweet.text))
-					})
-					tweets.forEach(async tweet => {
-						let obj = {
-							searchterm: q,
-							text: tweet.text
-						}
-						redis.hset('tweets', tweet.id, JSON.stringify(obj))
-						await db
-							.collection('tweets')
-							.doc(tweet.id)
-							.set(obj)
-					})
-					res.send({ tweets, result })
+					await Promise.all(
+						tweets.map(async tweet => {
+							let s = sentiment.analyze(tweet.text)
+							let g = await GoogleNatural(tweet.text)
+							let t = nlp(tweet.text)
+								.topics()
+								.data()
+							let obj = {
+								score: s,
+								google: g,
+								topics: t,
+								searchterm: q,
+								text: tweet.text
+							}
+							result.push(obj)
+							//redis.hset('tweets', tweet.id, JSON.stringify(obj))
+							await db
+								.collection('tweets')
+								.doc(tweet.id)
+								.set(obj)
+						})
+					)
+					res.send({ result })
 				} else {
 					res.send({ error: 'No tweets' })
 				}
