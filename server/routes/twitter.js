@@ -199,7 +199,11 @@ module.exports = (app, redis) => {
 								result.push(obj)
 							})
 						)
-						res.send({ result })
+						if (result.length > 0) {
+							res.send({ result })
+						} else {
+							res.send({ error: 'No tweets' })
+						}
 					}
 				}
 			} else {

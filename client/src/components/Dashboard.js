@@ -34,7 +34,18 @@ class Dashboard extends React.Component {
 				}
 			})
 			data = {
-				datasets: [{ data: [positive, negative] }]
+				labels: ['Positive', 'Negative'],
+				datasets: [
+					{
+						label: 'Sentiment',
+						backgroundColor: [
+							'rgba(60, 186, 84, 0.2)',
+							'rgba(219, 50, 54, 0.2)'
+						],
+						borderColor: ['rgba(60, 186, 84, 1)', 'rgba(219, 50, 54, 1)'],
+						data: [positive, negative]
+					}
+				]
 			}
 		}
 		return data
@@ -66,7 +77,18 @@ class Dashboard extends React.Component {
 				}
 			})
 			data = {
-				datasets: [{ data: [positive, negative] }]
+				labels: ['Positive', 'Negative'],
+				datasets: [
+					{
+						label: 'Google',
+						backgroundColor: [
+							'rgba(60, 186, 84, 0.2)',
+							'rgba(219, 50, 54, 0.2)'
+						],
+						borderColor: ['rgba(60, 186, 84, 1)', 'rgba(219, 50, 54, 1)'],
+						data: [positive, negative]
+					}
+				]
 			}
 		}
 		return data
@@ -80,15 +102,11 @@ class Dashboard extends React.Component {
 					Seen values:
 					{this.props.searched.map(term => term).join(', ')}
 				</div>
-				<div>
-					<Doughnut data={this.renderChartScore} />
-				</div>
-				<div>
-					<Doughnut data={this.renderChartGoogle} />
-				</div>
 				{!error ? (
 					result ? (
 						<>
+							<Doughnut data={this.renderChartScore} />
+							<Doughnut data={this.renderChartGoogle} />
 							<div>
 								Topics in the tweets:
 								{result.map(tweet =>

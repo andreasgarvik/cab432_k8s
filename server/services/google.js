@@ -7,8 +7,14 @@ const GoogleNatural = async content => {
 		content,
 		type: 'PLAIN_TEXT'
 	}
-	const [result] = await client.analyzeSentiment({ document: document })
-	const sentiment = result.documentSentiment
+	let sentiment
+	try {
+		let [result] = await client.analyzeSentiment({ document: document })
+		sentiment = result.documentSentiment
+	} catch (e) {
+		console.log(e)
+		return { score: 0 }
+	}
 
 	return sentiment
 }
