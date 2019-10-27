@@ -13,17 +13,26 @@ class SearchBar extends React.Component {
 	}
 
 	handleChange = e => {
-		this.setState({
-			[e.target.id]: e.target.value
-		})
+		if (/^[a-zA-Z\s]*$/.test(e.target.value))
+			this.setState({
+				[e.target.id]: e.target.value
+			})
 	}
 
 	handleSubmit = e => {
 		e.preventDefault()
-		this.setState({ search: '', loader: true })
-		this.props.flushTweets()
-		this.props.connectStream(this.state.search)
-		this.props.newSearch(this.state.search)
+		if (
+			!(
+				(!this.state.search && this.state.loader) ||
+				this.state.search.trim() === '' ||
+				(this.state.loader && Object.keys(this.props.twitter).length === 0)
+			)
+		) {
+			this.setState({ search: '', loader: true })
+			this.props.flushTweets()
+			this.props.connectStream(this.state.search)
+			this.props.newSearch(this.state.search)
+		}
 	}
 
 	render() {
@@ -43,11 +52,17 @@ class SearchBar extends React.Component {
 							maxLength='100'
 							placeholder='Enter a search term'
 							onChange={this.handleChange}
+							maxlength='20'
 						/>
 					</div>
 					<button
 						className={`right btn grey z-depth-0 btn-floating btn-large ${
-							!this.state.search && this.state.loader ? 'disabled' : ''
+							(!this.state.search && this.state.loader) ||
+							this.state.search.trim() === '' ||
+							(this.state.loader &&
+								Object.keys(this.props.twitter).length === 0)
+								? 'disabled'
+								: ''
 						}`}
 					>
 						<i className='material-icons'>search</i>

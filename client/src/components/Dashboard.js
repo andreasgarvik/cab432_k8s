@@ -10,17 +10,7 @@ class Dashboard extends React.Component {
 
 	renderChartScore = () => {
 		const result = this.props.twitter.result
-		let data = {
-			labels: ['Positive', 'Negative'],
-			datasets: [
-				{
-					label: 'Sentiment',
-					backgroundColor: ['rgba(60, 186, 84, 0.2)', 'rgba(219, 50, 54, 0.2)'],
-					borderColor: ['rgba(60, 186, 84, 1)', 'rgba(219, 50, 54, 1)'],
-					data: [0, 0]
-				}
-			]
-		}
+		let data = {}
 		if (result) {
 			let positive = 0
 			let negative = 0
@@ -53,17 +43,7 @@ class Dashboard extends React.Component {
 
 	renderChartGoogle = () => {
 		const result = this.props.twitter.result
-		let data = {
-			labels: ['Positive', 'Negative'],
-			datasets: [
-				{
-					label: 'Google',
-					backgroundColor: ['rgba(60, 186, 84, 0.2)', 'rgba(219, 50, 54, 0.2)'],
-					borderColor: ['rgba(60, 186, 84, 1)', 'rgba(219, 50, 54, 1)'],
-					data: [0, 0]
-				}
-			]
-		}
+		let data = {}
 		if (result) {
 			let positive = 0
 			let negative = 0
@@ -98,34 +78,49 @@ class Dashboard extends React.Component {
 		const { result, error } = this.props.twitter
 		return (
 			<div>
-				<div>
-					Seen values:
-					{this.props.searched.map(term => term).join(', ')}
-				</div>
+				<div>Searched: {this.props.searched.map(term => term).join(', ')}</div>
 				{!error ? (
 					result ? (
 						<>
-							<Doughnut data={this.renderChartScore} />
-							<Doughnut data={this.renderChartGoogle} />
-							<div>
-								Topics in the tweets:
-								{result.map(tweet =>
-									tweet.topics.map(t => t.normal).join(', ')
-								)}
+							<div className='row' style={{ marginTop: '4.6%' }}>
+								<div class='col s12 m12 l6'>
+									<h4 className='center-align'>Sentiment</h4>
+									<Doughnut data={this.renderChartScore} />
+								</div>
+								<div class='col s12 m12 l6'>
+									<h4 className='center-align'>Google Natural Language</h4>
+									<Doughnut data={this.renderChartGoogle} />
+								</div>
 							</div>
-							<ul class='collection with-header'>
-								<li class='collection-header'>
+							<ul className='collection with-header'>
+								<li className='collection-header'>
 									<h4>Tweets</h4>
 								</li>
 								{result.map(tweet => (
-									<li class='collection-item'>{tweet.text}</li>
+									<li className='collection-item'>{tweet.text}</li>
 								))}
+							</ul>
+							<ul className='collection with-header'>
+								<li className='collection-header'>
+									<h4>Topics in the tweets</h4>
+								</li>
+								{result.map(tweet => {
+									if (tweet.topics.length !== 0) {
+										return (
+											<li className='collection-item'>
+												{tweet.topics.map(t => t.normal).join(', ')}
+											</li>
+										)
+									} else {
+										return null
+									}
+								})}
 							</ul>
 						</>
 					) : null
 				) : (
 					<div
-						class='card-panel red'
+						className='card-panel red'
 						style={{
 							position: 'absolute',
 							top: '0',
@@ -139,7 +134,7 @@ class Dashboard extends React.Component {
 							zIndex: '-1'
 						}}
 					>
-						<span class='white-text'>{error}</span>
+						<span className='white-text'>{error}</span>
 					</div>
 				)}
 			</div>

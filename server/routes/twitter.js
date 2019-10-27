@@ -4,7 +4,6 @@ const keys = require('../config/keys')
 const GoogleNatural = require('../services/google')
 const db = require('../db/firestore')
 const Sentiment = require('sentiment')
-const natural = require('natural')
 const nlp = require('compromise')
 
 const get = util.promisify(request.get)
@@ -153,40 +152,79 @@ module.exports = (app, redis) => {
 	app.get('/connect', async (req, res) => {
 		let tweets = []
 		let q = req.query.q
-		redis.hset('searchterms', q, q)
-		await db
-			.collection('searchterms')
-			.doc(q)
-			.set({
-				searchterm: q
-			})
-		let rules = [{ value: `"${q}" lang:en`, tag: q }]
-		let stream = await startStream(rules)
-		stream.on('data', async data => {
-			if (tweets.length < 100) {
-				if (data.length > 2) {
-					let t = JSON.parse(data)
-					if (!t.connection_issue) {
-						tweets.push(t.data)
-					} else {
-						stream.abort()
-						tweets = tweets.map(tweet => tweet.text)
-						const doc = await db
-							.collection('tweets')
-							.where('searchterm', '==', q)
-							.get()
+		if (!/^(?!\.\.?$)(?!.*__.*__)([^/]{1,1500})$/.test(q)) {
+			res.send({ error: 'Not valid search term' })
+		} else {
+			redis.hset('searchterms', q, q)
+			await db
+				.collection('searchterms')
+				.doc(q)
+				.set({
+					searchterm: q
+				})
+			let rules = [{ value: `"${q}" lang:en`, tag: q }]
+			let stream = await startStream(rules)
+			stream.on('data', async data => {
+				if (tweets.length < 100) {
+					if (data.length > 2) {
+						let t
+						try {
+							t = JSON.parse(data)
+						} catch (e) {
+							console.log(e)
+							t.connection_issue = 'Parsing Error'
+						}
+						if (!t.connection_issue) {
+							tweets.push(t.data)
+						} else {
+							stream.abort()
+							tweets = tweets.map(tweet => tweet.text)
+							const doc = await db
+								.collection('tweets')
+								.where('searchterm', '==', q)
+								.get()
 
-						doc.forEach(doc => {
-							if (tweets.length < 100) {
-								tweets.push(doc.data().text)
+							doc.forEach(doc => {
+								if (tweets.length < 100) {
+									tweets.push(doc.data().text)
+								}
+							})
+							let result = []
+							await Promise.all(
+								tweets.map(async tweet => {
+									let s = sentiment.analyze(tweet)
+									let g = await GoogleNatural(tweet)
+									let t = nlp(tweet)
+										.topics()
+										.data()
+									let obj = {
+										score: s,
+										google: g,
+										topics: t,
+										searchterm: q,
+										text: tweet
+									}
+									result.push(obj)
+								})
+							)
+							if (result.length > 0) {
+								res.send({ result })
+							} else {
+								res.send({
+									error: 'Connection error, try one of the already searched'
+								})
 							}
-						})
+						}
+					}
+				} else {
+					stream.abort()
+					if (tweets.length > 0) {
 						let result = []
 						await Promise.all(
 							tweets.map(async tweet => {
-								let s = sentiment.analyze(tweet)
-								let g = await GoogleNatural(tweet)
-								let t = nlp(tweet)
+								let s = sentiment.analyze(tweet.text)
+								let g = await GoogleNatural(tweet.text)
+								let t = nlp(tweet.text)
 									.topics()
 									.data()
 								let obj = {
@@ -194,50 +232,24 @@ module.exports = (app, redis) => {
 									google: g,
 									topics: t,
 									searchterm: q,
-									text: tweet
+									text: tweet.text
 								}
 								result.push(obj)
+								await db
+									.collection('tweets')
+									.doc(tweet.id)
+									.set(obj)
 							})
 						)
-						if (result.length > 0) {
-							res.send({ result })
-						} else {
-							res.send({ error: 'No tweets' })
-						}
+						res.send({ result })
+					} else {
+						res.send({
+							error: 'Connection error, try one of the already searched'
+						})
 					}
 				}
-			} else {
-				stream.abort()
-				if (tweets.length > 0) {
-					let result = []
-					await Promise.all(
-						tweets.map(async tweet => {
-							let s = sentiment.analyze(tweet.text)
-							let g = await GoogleNatural(tweet.text)
-							let t = nlp(tweet.text)
-								.topics()
-								.data()
-							let obj = {
-								score: s,
-								google: g,
-								topics: t,
-								searchterm: q,
-								text: tweet.text
-							}
-							result.push(obj)
-							//redis.hset('tweets', tweet.id, JSON.stringify(obj))
-							await db
-								.collection('tweets')
-								.doc(tweet.id)
-								.set(obj)
-						})
-					)
-					res.send({ result })
-				} else {
-					res.send({ error: 'No tweets' })
-				}
-			}
-		})
+			})
+		}
 	})
 
 	app.get('/searched', async (req, res) => {

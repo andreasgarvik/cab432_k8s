@@ -1,9 +1,0 @@
-{
-	"cloudcode.profile-cluster-map": {
-		"[default]": "docker-desktop",
-		"GKE": "gke_cab432-a2_australia-southeast1-a_morten"
-	},
-	"cloudcode.profile-registry-map": {
-		"GKE": "gcr.io/cab432-a2"
-	}
-}
